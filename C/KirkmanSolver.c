@@ -15,52 +15,58 @@ int isValidInput(int, int);
 int fillInEntry(int, int, int, int [][rows][cols], int [][numOfKids], int [][numOfKids]);
 void printAdjacencyTable(int adjTable[][numOfKids]);
 void printSolution(int [][rows][cols]);
+void zeroOutAdj(int [][numOfKids]);
+void zeroOutSolution(int [][rows][cols]);
+void zeroOutUnavailable(int [][numOfKids]);
 
 
 int main(int argc, char **argv) {
 
-     if (argc != 3) {
-         printf("Invalid number of arguments. Please enter number of rows and number of columns.\n");
-         return 1;
-     }
+    if (argc != 3) {
+        printf("Invalid number of arguments. Please enter number of rows and number of columns.\n");
+        return 1;
+    }
 
-     char * end;
-     rows = (int)strtol(argv[1], &end, 10);
-     cols = (int)strtol(argv[2], &end , 10);
+    char * end;
+    rows = (int)strtol(argv[1], &end, 10);
+    cols = (int)strtol(argv[2], &end , 10);
 
-     if(!isValidInput(rows, cols)) {
-         printf("Impossible!\n");
-         return 1;
-     }
+    if(!isValidInput(rows, cols)) {
+        printf("Impossible!\n");
+        return 1;
+    }
 
-     numOfKids = rows * cols;
-     /*
-      * Each child needs to share a row with every other child
-      * in the group. Each day that child can share a row with
-      * at most cols - 1 students. The total number of
-      * days required to share a row with all the other
-      * numOfKids - 1 students is the ratio given below.
-      */
-     numOfDays = (numOfKids - 1)/(cols - 1);
-     int solution[numOfDays][rows][cols];
-     int adjacencyTable[numOfKids][numOfKids];
+    numOfKids = rows * cols;
+    /*
+     * Each child needs to share a row with every other child
+     * in the group. Each day that child can share a row with
+     * at most cols - 1 students. The total number of
+     * days required to share a row with all the other
+     * numOfKids - 1 students is the ratio given below.
+     */
+    numOfDays = (numOfKids - 1)/(cols - 1);
+    int solution[numOfDays][rows][cols];
+    int adjacencyTable[numOfKids][numOfKids];
 
-     currentDay = 1;
-     currentRow = 0;
-     currentColumn = 1;
+    zeroOutSolution(solution);
+    zeroOutAdj(adjacencyTable);
 
-     // A checklist for each day that let's us know which
-     // girls have already been taken.
-     int unavailable[numOfDays][numOfKids];
-     int success;
+    currentDay = 1;
+    currentRow = 0;
+    currentColumn = 1;
 
-     // Fill in the first day and fill in part of the first columnn.
-     initialOptimizations(solution, adjacencyTable, unavailable);
-     printAdjacencyTable(adjacencyTable);
+    // A checklist for each day that let's us know which
+    // girls have already been taken.
+    int unavailable[numOfDays][numOfKids];
+    zeroOutUnavailable(unavailable);
+    int success;
 
-     // Until we're done...
-     while(1) {
-        // ..Try to fill in the current solution...
+    // Fill in the first day and fill in part of the first columnn.
+    initialOptimizations(solution, adjacencyTable, unavailable);
+
+    // Until we're done...
+    while(1) {
+       // ..Try to fill in the current solution...
         printf("Currently on day %i, row %i, col %i.\n", currentDay, currentRow, currentColumn);
         printf("Table looks like \n");
         printSolution(solution);
@@ -108,9 +114,47 @@ int main(int argc, char **argv) {
      return 0;
 };
 
+void zeroOutSolution(int sol[][rows][cols]) {
+    int col,
+        day,
+        row;
+
+    for(day = 0; day < numOfDays; day += 1) {
+        for(row = 0; row < rows; row += 1) {
+            for(col = 0; col < cols; col += 1) {
+                sol[day][row][col] = 0;
+            }
+        }
+    }
+}
+
+void zeroOutAdj(int adjTable[][numOfKids]) {
+    int col,
+        row;
+
+    for(row = 0; row < numOfKids; row += 1) {
+        for(col = 0; col < numOfKids; col += 1) {
+            adjTable[row][col] = 0;
+        }
+    }
+}
+
+void zeroOutUnavailable(int unavailable[][numOfKids]) {
+    int day,
+        child;
+
+    for(day = 0; day < numOfDays; day += 1) {
+        for(child = 0; child < numOfKids; child += 1) {
+            unavailable[day][child] = 0;
+        }
+    }
+
+}
+
 int fillInEntry(int day, int row, int col, int solution[][rows][cols], int adjTable[][numOfKids], int unavailable[][numOfKids]) {
     // If we are in a preoptimized place get out.
     if(row < cols && col == 0){
+        printf("Skip!");
         return 1;
     }
 
@@ -120,10 +164,11 @@ int fillInEntry(int day, int row, int col, int solution[][rows][cols], int adjTa
         currentSolution;
 
     currentSolution = solution[day][row][col];
-
+    printf("A");
     for(currentChild = solution[day][row][col]; currentChild < numOfKids; currentChild += 1) {
         // If that child has already been placed continue.
         if (unavailable[day][currentChild]) continue;
+        printf("B");
         // Check if this child has already shared a row.
         for(previousCol = 0; previousCol < col; previousCol += 1) {
             previousChild =  solution[day][row][previousCol];
@@ -171,6 +216,7 @@ int isValidInput(int numOfRows, int numOfCols ) {
 void initialOptimizations(int solution[][rows][cols], int adjTable[][numOfKids], int unavailable[][numOfKids]) {
 
     int child, day, row;
+
     /*
      * The first day is simple. We list the children in ascending
      * order, left-to-right, top-to-bottom.
