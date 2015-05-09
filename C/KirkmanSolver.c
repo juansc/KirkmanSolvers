@@ -61,8 +61,12 @@ int main(int argc, char **argv) {
      // Until we're done...
      while(1) {
         // ..Try to fill in the current solution...
+        printf("Currently on day %i, row %i, col %i.\n", currentDay, currentRow, currentColumn);
+        printf("Table looks like \n");
+        printSolution(solution);
         success = fillInEntry(currentDay, currentRow, currentColumn, solution, adjacencyTable, unavailable);
         if (success) {
+            printf("Yay!\n\n");
             // ..if viable, go to next spot...
             currentColumn = (currentColumn + 1) % cols;
             if (currentColumn == 0) {
@@ -78,6 +82,7 @@ int main(int argc, char **argv) {
                 return 0;
             }
         } else {
+            printf("Fuck!\n\n");
             // .. else backtrack...
             currentColumn = (currentColumn + cols - 1) % cols;
             if (currentColumn == cols) {
@@ -104,9 +109,53 @@ int main(int argc, char **argv) {
 };
 
 int fillInEntry(int day, int row, int col, int solution[][rows][cols], int adjTable[][numOfKids], int unavailable[][numOfKids]) {
-    int currentChild = solution[day][row][col];
+    // If we are in a preoptimized place get out.
+    if(row < cols && col == 0){
+        return 1;
+    }
 
-    return 1;
+    int currentChild,
+        previousChild,
+        previousCol,
+        currentSolution;
+
+    currentSolution = solution[day][row][col];
+
+    for(currentChild = solution[day][row][col]; currentChild < numOfKids; currentChild += 1) {
+        // If that child has already been placed continue.
+        if (unavailable[day][currentChild]) continue;
+        // Check if this child has already shared a row.
+        for(previousCol = 0; previousCol < col; previousCol += 1) {
+            previousChild =  solution[day][row][previousCol];
+            // If it has shared a row with someone else break out early.
+            if(adjTable[previousChild][currentChild]) break;
+        }
+        // If we checked all girls in the row and we're fine, place
+        // current child in the partial solution.
+        if(previousCol == col) {
+            solution[day][row][col] = currentChild;
+            for(previousCol = 0; previousCol < col; previousCol += 1) {
+                previousChild = solution[day][row][previousCol];
+                adjTable[previousChild][currentChild] = 1;
+                adjTable[currentChild][previousChild] = 1;
+                unavailable[day][currentChild] = 1;
+            }
+            return 1;
+        }
+        // Else not we continue
+    }
+    // Else we failed.
+
+    // If this was already a 0(empty) we don't need to change the adjacency table.
+    if(currentSolution != 0) {
+        solution[day][row][col] = 0;
+        for(previousCol = 0; previousCol < col; previousCol += 1) {
+            previousChild = solution[day][row][previousCol];
+            adjTable[previousChild][currentSolution] = 0;
+            adjTable[currentSolution][previousChild] = 0;
+        }
+    }
+    return 0;
 
 }
 
