@@ -163,12 +163,20 @@ int fillInEntry(int day, int row, int col, int solution[][rows][cols], int adjTa
         previousCol,
         currentSolution;
 
+    // TODO
+    // Make sure we always start with the number right
+    // after our previous solution
+    printf("Current Day: %i\n",  solution[day][row][col]);
+    printf("Previous day: %i\n", solution[day][row][col - 1]);
+
     currentSolution = solution[day][row][col];
-    printf("A");
-    for(currentChild = solution[day][row][col]; currentChild < numOfKids; currentChild += 1) {
+    currentChild = (col == 0) ? currentSolution + 1: solution[day][row][col - 1] + 1;
+
+    for(; currentChild < numOfKids; currentChild += 1) {
+        printf("Checking child %i.\n", currentChild );
         // If that child has already been placed continue.
         if (unavailable[day][currentChild]) continue;
-        printf("B");
+        printf("Avaliable!\n");
         // Check if this child has already shared a row.
         for(previousCol = 0; previousCol < col; previousCol += 1) {
             previousChild =  solution[day][row][previousCol];
