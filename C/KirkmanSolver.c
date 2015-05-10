@@ -10,9 +10,12 @@ int cols,
     numOfDays,
     rows;
 
+void backTrack();
+int checkSolution(int [][rows][cols], int [][numOfKids]);
 void initialOptimizations(int [][rows][cols], int [][numOfKids], int [][numOfKids]);
 int isValidInput(int, int);
 int fillInEntry(int, int, int, int [][rows][cols], int [][numOfKids], int [][numOfKids]);
+void goToNextEntry();
 void printAdjacencyTable(int adjTable[][numOfKids]);
 void printSolution(int [][rows][cols]);
 void zeroOutAdj(int [][numOfKids]);
@@ -63,40 +66,50 @@ int main(int argc, char **argv) {
 
     // Fill in the first day and fill in part of the first columnn.
     initialOptimizations(solution, adjacencyTable, unavailable);
+    int counter = 0;
 
     // Until we're done...
     while(1) {
        // ..Try to fill in the current solution...
-        printf("Currently on day %i, row %i, col %i.\n", currentDay, currentRow, currentColumn);
-        printf("Table looks like \n");
-        printSolution(solution);
+        counter += 1;
+        if (counter % 500 == 0) {
+            counter = 0;
+            //printf("\033[2J\033[1;1H");
+            //printf("Current Solution\n");
+            //printSolution(solution);
+            //printf("\n");
+        }
+        //printf("Currently on day %i, row %i, col %i.\n", currentDay, currentRow, currentColumn);
+        //printf("Solution looks like \n");
+        //printSolution(solution);
+        //printf("adjacency Table looks like\n");
+        //printAdjacencyTable(adjacencyTable);
         success = fillInEntry(currentDay, currentRow, currentColumn, solution, adjacencyTable, unavailable);
         if (success) {
-            printf("Yay!\n\n");
+            //printf("Yay!\n\n");
             // ..if viable, go to next spot...
-            currentColumn = (currentColumn + 1) % cols;
-            if (currentColumn == 0) {
-                currentRow = (currentRow + 1) % rows;
-                if(currentRow == 0) {
-                    currentDay += 1;
-                }
-            }
+            goToNextEntry();
             // .. If we finished the last day, we're done...
             if (currentDay == numOfDays) {
                 printf("Solution found\n");
                 printSolution(solution);
+                zeroOutAdj(adjacencyTable);
+                success = checkSolution(solution, adjacencyTable);
+                printAdjacencyTable(adjacencyTable);
+                if(success) {
+                    printf("Solution correct!\n");
+                } else{
+                    printf("Solution failed!\n");
+                }
+
                 return 0;
             }
         } else {
-            printf("Fuck!\n\n");
-            // .. else backtrack...
-            currentColumn = (currentColumn + cols - 1) % cols;
-            if (currentColumn == cols) {
-                currentRow = (currentRow + rows - 1) % rows;
-                if (currentRow == rows) {
-                    currentDay -= 1;
-                }
-            }
+            //printf("Fuck!\n\n");
+            // .. else back track...
+            // When we back track, we have to skip over the
+            // fixed days.
+            backTrack();
             // ..if we couldn't find anything quit...
             if (currentDay == 1 && currentRow == 0 && currentColumn == 0){
                 printf("No solutions exist\n");
@@ -114,6 +127,32 @@ int main(int argc, char **argv) {
      return 0;
 };
 
+void goToNextEntry() {
+    currentColumn = (currentColumn + 1) % cols;
+    if (currentColumn == 0) {
+        currentRow = (currentRow + 1) % rows;
+        if(currentRow == 0) {
+            currentDay += 1;
+        }
+    }
+    // If we are in one of the fixed entries skip.
+    if(currentColumn == 0 && currentRow < cols) goToNextEntry();
+}
+
+void backTrack(){
+    currentColumn = (currentColumn + cols - 1) % cols;
+    if( currentColumn == 0 && currentRow < cols) {
+        currentColumn = (currentColumn + cols - 1) % cols;
+    }
+    if (currentColumn == cols - 1) {
+        currentRow = (currentRow + rows - 1) % rows;
+        if (currentRow == rows - 1) {
+            currentDay -= 1;
+        }
+    }
+    if(currentColumn == 0 && currentRow < cols) backTrack();
+}
+
 void zeroOutSolution(int sol[][rows][cols]) {
     int col,
         day,
@@ -127,6 +166,8 @@ void zeroOutSolution(int sol[][rows][cols]) {
         }
     }
 }
+
+
 
 void zeroOutAdj(int adjTable[][numOfKids]) {
     int col,
@@ -154,7 +195,7 @@ void zeroOutUnavailable(int unavailable[][numOfKids]) {
 int fillInEntry(int day, int row, int col, int solution[][rows][cols], int adjTable[][numOfKids], int unavailable[][numOfKids]) {
     // If we are in a preoptimized place get out.
     if(row < cols && col == 0){
-        printf("Skip!");
+        //printf("Skip!");
         return 1;
     }
 
@@ -163,25 +204,34 @@ int fillInEntry(int day, int row, int col, int solution[][rows][cols], int adjTa
         previousCol,
         currentSolution;
 
-    // TODO
-    // Make sure we always start with the number right
-    // after our previous solution
-    printf("Current Day: %i\n",  solution[day][row][col]);
-    printf("Previous day: %i\n", solution[day][row][col - 1]);
-
     currentSolution = solution[day][row][col];
-    currentChild = (col == 0) ? currentSolution + 1: solution[day][row][col - 1] + 1;
+    // If we have nothing there right now.
+    if(currentSolution == 0) {
+        currentChild = (col == 0) ? solution[day][row - 1][col] + 1 : solution[day][row][col - 1] + 1;
+    } else {
+        // Else we have to clear it.
+        for(previousCol = 0; previousCol < col; previousCol += 1) {
+            previousChild = solution[day][row][previousCol];
+            adjTable[previousChild][currentSolution] = 0;
+            adjTable[currentSolution][previousChild] = 0;
+        }
+        unavailable[day][currentSolution] = 0;
+        currentChild = currentSolution + 1;
+    }
 
     for(; currentChild < numOfKids; currentChild += 1) {
-        printf("Checking child %i.\n", currentChild );
         // If that child has already been placed continue.
         if (unavailable[day][currentChild]) continue;
-        printf("Avaliable!\n");
         // Check if this child has already shared a row.
         for(previousCol = 0; previousCol < col; previousCol += 1) {
             previousChild =  solution[day][row][previousCol];
             // If it has shared a row with someone else break out early.
             if(adjTable[previousChild][currentChild]) break;
+            // The numbers in the very last row of the first day
+            // must be in the last column
+            if(numOfKids - currentChild <= cols && col != cols - 1) {
+                break;
+            }
         }
         // If we checked all girls in the row and we're fine, place
         // current child in the partial solution.
@@ -195,10 +245,8 @@ int fillInEntry(int day, int row, int col, int solution[][rows][cols], int adjTa
             }
             return 1;
         }
-        // Else not we continue
     }
     // Else we failed.
-
     // If this was already a 0(empty) we don't need to change the adjacency table.
     if(currentSolution != 0) {
         solution[day][row][col] = 0;
@@ -280,4 +328,25 @@ void printSolution(int solution[][rows][cols]) {
         }
         printf("\n");
     }
+}
+
+int checkSolution(int solution[][rows][cols], int adjTable[][numOfKids]) {
+    int day, row, col, child, previousChild, previousCol;
+    for(day = 0; day < numOfDays; day += 1) {
+        for(row = 0; row < rows; row += 1) {
+            for(col = 0; col < cols; col += 1) {
+                child = solution[day][row][col];
+                for(previousCol = 0; previousCol < col; previousCol += 1) {
+                    previousChild = solution[day][row][previousCol];
+                    if(adjTable[previousChild][child] == 0){
+                        adjTable[previousChild][child] = 1;
+                    } else {
+                        printf("Invalid solution!!!\n");
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+    return 1;
 }
