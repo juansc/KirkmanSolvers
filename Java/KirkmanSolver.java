@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 
-public class SchoolSolver{
+public class KirkmanSolver{
 
     public static int [][] adjacencyTable;
     public static boolean [][] unavailable;
@@ -43,7 +43,7 @@ public class SchoolSolver{
             for( int j = min; j < max; j++  ){
                 adjacencyTable[ i ][ j ] = adjacencyTable[ j ][ i ] = 1;
             }
-        }        
+        }
 
         for( int day = 1; day < numOfDays; day++ ){
             for( int row = 0; row < kidsPerRow; row++ ){
@@ -58,7 +58,7 @@ public class SchoolSolver{
         int currentRow;
         int currentDay;
         int currentCol;
-        
+
         unavailable = new boolean [ numOfDays ][ numOfChildren ];
         for( int day = 0; day < numOfDays; day++ ){
             for( int child = 0; child < kidsPerRow; child++ ){
@@ -82,7 +82,7 @@ public class SchoolSolver{
             if( checkEntry == -1 ){
                 if( children[ currentRow ][ currentDay ][ currentCol] != 0 ){
                     fillTable( children , currentRow, currentDay, currentCol, false );
-                    unavailable[ currentDay ][ children[ currentRow ][ currentDay ][ currentCol] ] = false;                
+                    unavailable[ currentDay ][ children[ currentRow ][ currentDay ][ currentCol] ] = false;
                 }
                 children[ currentRow ][ currentDay ][ currentCol ] = 0;
                 if( ( currentCol == 1 ) && ( ( currentEntry ) < maxIndex ) ){
@@ -105,7 +105,7 @@ public class SchoolSolver{
         int adjacentChild;
         int currentChild = kids[ currentRow ][ currentDay ][ lastIndex ];
         for( int i = lastIndex - 1; i >= 0; i-- ){
-            adjacentChild = kids[ currentRow ][ currentDay ][ i ];             
+            adjacentChild = kids[ currentRow ][ currentDay ][ i ];
             adjacencyTable[ currentChild ][ adjacentChild ] = adjacencyTable[ adjacentChild ][ currentChild ] = ( state ) ? 1 : 0;
         }
     }
@@ -129,13 +129,13 @@ public class SchoolSolver{
                     System.out.printf( "%-4d",table[ row ][ day ][ kid ] );
                 }
                 System.out.print( " | ");
-            } 
+            }
             System.out.println("");
         }
         System.out.println("");
     }
 
-    // This checks only the row if adding the new child is valid. The makeLegalEntry takes care of 
+    // This checks only the row if adding the new child is valid. The makeLegalEntry takes care of
     // those that cannot be here for the overall table.
     public static boolean isValid( int child, int [] kidRow, int kidsPerRow, int index ){
         int ind = index % kidRow.length;
@@ -153,16 +153,16 @@ public class SchoolSolver{
         int currentEntry = index % kidsPerRow;
         int currentDay =  index / numOfKids;
         int currentRow = ( index % numOfKids ) / kidsPerRow;
-        int currentChild = kids[ currentRow ][ currentDay ][ currentEntry ];     
+        int currentChild = kids[ currentRow ][ currentDay ][ currentEntry ];
         boolean haveCandidate = false;
 
         if( currentChild!= 0 ){
-            fillTable( kids , currentRow, currentDay, currentEntry, false );                
+            fillTable( kids , currentRow, currentDay, currentEntry, false );
             unavailable[ currentDay ][ currentChild ] = false;
             candidate = currentChild + 1;
         }else{
             if( currentEntry == 0  ){
-                candidate = kids[ currentRow - 1 ][ currentDay ][ currentEntry ] + 1; 
+                candidate = kids[ currentRow - 1 ][ currentDay ][ currentEntry ] + 1;
             }else{
                 candidate = kids[ currentRow ][ currentDay ][ currentEntry - 1 ] + 1;
             }
@@ -175,7 +175,7 @@ public class SchoolSolver{
         while( !haveCandidate ){
             haveCandidate = false;
             for( int i = candidate; i < numOfKids; i++ ){
-                if( !unavailable[ currentDay ][ i ] ){                    
+                if( !unavailable[ currentDay ][ i ] ){
                     candidate = i;
                     haveCandidate = true;
                     break;
